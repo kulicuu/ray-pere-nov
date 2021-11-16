@@ -319,8 +319,6 @@ fn main() {
     }
 
 
-
-
     let (swapchain, swapchain_images, swapchain_image_views) = create_swapchain_etc(
         &surface,
         format,
@@ -331,10 +329,104 @@ fn main() {
     );
 
 
-
-
-
     let entry_point = CString::new("main").unwrap();
+
+
+
+
+
+
+    println!("\n \n");
+
+    let model_path: &'static str = "assets/terrain__002__.obj";
+    let (models, materials) = tobj::load_obj(&model_path, &tobj::LoadOptions::default()).expect("Failed to load model object!");
+    let model = models[0].clone();
+    let materials = materials.unwrap();
+    let material = materials.clone().into_iter().nth(0).unwrap();
+    let mut vertices = vec![];
+    let mut indices = vec![];
+    let mesh = model.mesh;
+    let total_vertices_count = mesh.positions.len() / 3;
+    for i in 0..total_vertices_count {
+        let vertex = VertexV3 {
+            pos: [
+                mesh.positions[i * 3],
+                mesh.positions[i * 3 + 1],
+                mesh.positions[i * 3 + 2],
+                1.0,
+            ],
+            color: [1.0, 1.0, 1.0, 1.0],
+        };
+        vertices.push(vertex);
+    };
+    indices = mesh.indices.clone(); 
+
+    println!("Starting buffer and memory allocation/mapping processes... \n");
+
+
+    let vertex_buffer_size = ::std::mem::size_of_val(&vertices) as vk::DeviceSize;
+    
+    println!("vertex_buffer_size: {:?}", vertex_buffer_size);
+
+    let physical_device_memory_properties = unsafe { instance.get_physical_device_memory_properties(physical_device) };
+    println!("\n physical_device_memory_properties: {:?}", physical_device_memory_properties);
+    pretty_print(physical_device_memory_properties);
+
+
+    let vertex_buffer_create_info = vk::BufferCreateInfoBuilder::new()
+        .size(vertex_buffer_size * 200)
+        .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
+        .sharing_mode(vk::SharingMode::EXCLUSIVE);
+
+    println!("\n vertex_buffer_create_info: {:?}", vertex_buffer_create_info);
+
+    let vertex_buffer = unsafe {
+        device
+            .create_buffer(&vertex_buffer_create_info, None)
+            .expect("Failed to create vertex buffer.")
+    };
+
+    let vertex_buffer_memory_reqs = unsafe {
+        device
+            .get_buffer_memory_requirements(vertex_buffer)
+    };
+    println!("\n vertex_buffer_memory_reqs: {:?}", vertex_buffer_memory_reqs);
+
+    let vertex_buffer_memory_allocate_info =
+        vk::MemoryAllocateInfoBuilder::new()
+                    .allocation_size(vertex_buffer_memory_reqs.size)
+                    .memory_type_index(2)
+                    .build();
+    println!("\n vertex_buffer_memory_allocate_info, {:?} \n", vertex_buffer_memory_allocate_info);
+
+    let vertex_buffer_memory = unsafe {
+        device
+            .allocate_memory(&vertex_buffer_memory_allocate_info, None)
+            .expect("Failed to allocate vertex buffer memory.")
+    };
+    println!("\n vertex_buffer_memory: {:?} \n", &vertex_buffer_memory);
+
+    unsafe { device.bind_buffer_memory(vertex_buffer, vertex_buffer_memory, 0) }
+        .expect("Error on bind buffer memory");
+
+
+    unsafe {
+        let mut pointer: *mut std::ffi::c_void = std::ptr::null_mut();
+        let mut ref1 = &mut pointer;
+        device
+            .map_memory(
+                vertex_buffer_memory,
+                256,
+                vk::WHOLE_SIZE,
+                None,
+                ref1,
+            )
+            .expect("failed to map 333memory.");
+
+    }
+
+
+
 
 
     let vert_decoded = utils::decode_spv(SHADER_VERT).unwrap();
@@ -537,94 +629,94 @@ fn main() {
 
 
 
-    println!("\n \n");
+    // println!("\n \n");
 
-    let model_path: &'static str = "assets/terrain__002__.obj";
-    let (models, materials) = tobj::load_obj(&model_path, &tobj::LoadOptions::default()).expect("Failed to load model object!");
-    let model = models[0].clone();
-    let materials = materials.unwrap();
-    let material = materials.clone().into_iter().nth(0).unwrap();
-    let mut vertices = vec![];
-    let mut indices = vec![];
-    let mesh = model.mesh;
-    let total_vertices_count = mesh.positions.len() / 3;
-    for i in 0..total_vertices_count {
-        let vertex = VertexV3 {
-            pos: [
-                mesh.positions[i * 3],
-                mesh.positions[i * 3 + 1],
-                mesh.positions[i * 3 + 2],
-                1.0,
-            ],
-            color: [1.0, 1.0, 1.0, 1.0],
-        };
-        vertices.push(vertex);
-    };
-    indices = mesh.indices.clone(); 
+    // let model_path: &'static str = "assets/terrain__002__.obj";
+    // let (models, materials) = tobj::load_obj(&model_path, &tobj::LoadOptions::default()).expect("Failed to load model object!");
+    // let model = models[0].clone();
+    // let materials = materials.unwrap();
+    // let material = materials.clone().into_iter().nth(0).unwrap();
+    // let mut vertices = vec![];
+    // let mut indices = vec![];
+    // let mesh = model.mesh;
+    // let total_vertices_count = mesh.positions.len() / 3;
+    // for i in 0..total_vertices_count {
+    //     let vertex = VertexV3 {
+    //         pos: [
+    //             mesh.positions[i * 3],
+    //             mesh.positions[i * 3 + 1],
+    //             mesh.positions[i * 3 + 2],
+    //             1.0,
+    //         ],
+    //         color: [1.0, 1.0, 1.0, 1.0],
+    //     };
+    //     vertices.push(vertex);
+    // };
+    // indices = mesh.indices.clone(); 
 
-    println!("Starting buffer and memory allocation/mapping processes... \n");
+    // println!("Starting buffer and memory allocation/mapping processes... \n");
 
 
-    let vertex_buffer_size = ::std::mem::size_of_val(&vertices) as vk::DeviceSize;
+    // let vertex_buffer_size = ::std::mem::size_of_val(&vertices) as vk::DeviceSize;
     
-    println!("vertex_buffer_size: {:?}", vertex_buffer_size);
+    // println!("vertex_buffer_size: {:?}", vertex_buffer_size);
 
-    let physical_device_memory_properties = unsafe { instance.get_physical_device_memory_properties(physical_device) };
-    println!("\n physical_device_memory_properties: {:?}", physical_device_memory_properties);
-    pretty_print(physical_device_memory_properties);
-
-
-    let vertex_buffer_create_info = vk::BufferCreateInfoBuilder::new()
-        .size(vertex_buffer_size * 200)
-        .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
-        .sharing_mode(vk::SharingMode::EXCLUSIVE);
-
-    println!("\n vertex_buffer_create_info: {:?}", vertex_buffer_create_info);
-
-    let vertex_buffer = unsafe {
-        device
-            .create_buffer(&vertex_buffer_create_info, None)
-            .expect("Failed to create vertex buffer.")
-    };
-
-    let vertex_buffer_memory_reqs = unsafe {
-        device
-            .get_buffer_memory_requirements(vertex_buffer)
-    };
-    println!("\n vertex_buffer_memory_reqs: {:?}", vertex_buffer_memory_reqs);
-
-    let vertex_buffer_memory_allocate_info =
-        vk::MemoryAllocateInfoBuilder::new()
-                    .allocation_size(vertex_buffer_memory_reqs.size)
-                    .memory_type_index(2)
-                    .build();
-    println!("\n vertex_buffer_memory_allocate_info, {:?} \n", vertex_buffer_memory_allocate_info);
-
-    let vertex_buffer_memory = unsafe {
-        device
-            .allocate_memory(&vertex_buffer_memory_allocate_info, None)
-            .expect("Failed to allocate vertex buffer memory.")
-    };
-    println!("\n vertex_buffer_memory: {:?} \n", &vertex_buffer_memory);
-
-    unsafe { device.bind_buffer_memory(vertex_buffer, vertex_buffer_memory, 0) }
-        .expect("Error on bind buffer memory");
+    // let physical_device_memory_properties = unsafe { instance.get_physical_device_memory_properties(physical_device) };
+    // println!("\n physical_device_memory_properties: {:?}", physical_device_memory_properties);
+    // pretty_print(physical_device_memory_properties);
 
 
-    unsafe {
-        let mut pointer: *mut std::ffi::c_void = std::ptr::null_mut();
-        let mut ref1 = &mut pointer;
-        device
-            .map_memory(
-                vertex_buffer_memory,
-                256,
-                vk::WHOLE_SIZE,
-                None,
-                ref1,
-            )
-            .expect("failed to map 333memory.");
+    // let vertex_buffer_create_info = vk::BufferCreateInfoBuilder::new()
+    //     .size(vertex_buffer_size * 200)
+    //     .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
+    //     .sharing_mode(vk::SharingMode::EXCLUSIVE);
 
-    }
+    // println!("\n vertex_buffer_create_info: {:?}", vertex_buffer_create_info);
+
+    // let vertex_buffer = unsafe {
+    //     device
+    //         .create_buffer(&vertex_buffer_create_info, None)
+    //         .expect("Failed to create vertex buffer.")
+    // };
+
+    // let vertex_buffer_memory_reqs = unsafe {
+    //     device
+    //         .get_buffer_memory_requirements(vertex_buffer)
+    // };
+    // println!("\n vertex_buffer_memory_reqs: {:?}", vertex_buffer_memory_reqs);
+
+    // let vertex_buffer_memory_allocate_info =
+    //     vk::MemoryAllocateInfoBuilder::new()
+    //                 .allocation_size(vertex_buffer_memory_reqs.size)
+    //                 .memory_type_index(2)
+    //                 .build();
+    // println!("\n vertex_buffer_memory_allocate_info, {:?} \n", vertex_buffer_memory_allocate_info);
+
+    // let vertex_buffer_memory = unsafe {
+    //     device
+    //         .allocate_memory(&vertex_buffer_memory_allocate_info, None)
+    //         .expect("Failed to allocate vertex buffer memory.")
+    // };
+    // println!("\n vertex_buffer_memory: {:?} \n", &vertex_buffer_memory);
+
+    // unsafe { device.bind_buffer_memory(vertex_buffer, vertex_buffer_memory, 0) }
+    //     .expect("Error on bind buffer memory");
+
+
+    // unsafe {
+    //     let mut pointer: *mut std::ffi::c_void = std::ptr::null_mut();
+    //     let mut ref1 = &mut pointer;
+    //     device
+    //         .map_memory(
+    //             vertex_buffer_memory,
+    //             256,
+    //             vk::WHOLE_SIZE,
+    //             None,
+    //             ref1,
+    //         )
+    //         .expect("failed to map 333memory.");
+
+    // }
 
 
 
