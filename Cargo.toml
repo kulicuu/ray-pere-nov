@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 winit     = "0.25.0"
 
-erupt = { path = "../erupt/erupt" }
+erupt = { path = "../erupt_version_november/erupt" }
 
 structopt = "0.3"
 bytemuck = "1.5"

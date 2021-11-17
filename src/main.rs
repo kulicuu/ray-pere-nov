@@ -79,6 +79,8 @@ unsafe extern "system" fn debug_callback(
     let data = CStr::from_ptr((*p_callback_data).p_message).to_string_lossy();
     // writeln!(file, &*data);
     file.write(&*data.as_bytes()).expect("Unable to write to file.");
+
+    file.write(b"\n").expect("Unable to write newline to file.");
     
 
 
@@ -600,6 +602,11 @@ fn main() {
             );
 
             device.cmd_bind_pipeline(cmd_buf, vk::PipelineBindPoint::GRAPHICS, pipeline);
+
+
+            device.cmd_bind_vertex_buffers(cmd_buf, 200, &[vertex_buffer], &[0]);
+
+
             device.cmd_draw(cmd_buf, 3, 1, 0, 0);
             device.cmd_end_render_pass(cmd_buf);
 
