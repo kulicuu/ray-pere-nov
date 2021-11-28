@@ -1,0 +1,9 @@
+
+Validation Error: [ UNASSIGNED-CoreValidation-Shader-InputNotProduced ] Object 0: handle = 0xe88693000000000c, type = VK_OBJECT_TYPE_SHADER_MODULE; | MessageID = 0x23e43bb7 | Vertex shader consumes input at location 0 but not provided
+ 
+Validation Error: [ UNASSIGNED-CoreValidation-Shader-InputNotProduced ] Object 0: handle = 0xe88693000000000c, type = VK_OBJECT_TYPE_SHADER_MODULE; | MessageID = 0x23e43bb7 | Vertex shader consumes input at location 0 but not providedValidation Error: [ VUID-vkDestroyDevice-device-00378 ] Object 0: handle = 0x2bf57a4b480, type = VK_OBJECT_TYPE_DEVICE; Object 1: handle = 0xcfef35000000000a, type = VK_OBJECT_TYPE_BUFFER; | MessageID = 0x71500fba | OBJ ERROR : For VkDevice 0x2bf57a4b480[], VkBuffer 0xcfef35000000000a[] has not been destroyed. The Vulkan spec states: All child objects created on device must have been destroyed prior to destroying device (https://vulkan.lunarg.com/doc/view/1.2.189.2/windows/1.2-extensions/vkspec.html#VUID-vkDestroyDevice-device-00378)
+ 
+Validation Error: [ VUID-vkDestroyDevice-device-00378 ] Object 0: handle = 0x2bf57a4b480, type = VK_OBJECT_TYPE_DEVICE; Object 1: handle = 0xec4bec000000000b, type = VK_OBJECT_TYPE_DEVICE_MEMORY; | MessageID = 0x71500fba | OBJ ERROR : For VkDevice 0x2bf57a4b480[], VkDeviceMemory 0xec4bec000000000b[] has not been destroyed. The Vulkan spec states: All child objects created on device must have been destroyed prior to destroying device (https://vulkan.lunarg.com/doc/view/1.2.189.2/windows/1.2-extensions/vkspec.html#VUID-vkDestroyDevice-device-00378)
+ 
+
+ 

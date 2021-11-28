@@ -20,8 +20,12 @@ use erupt::{
     cstr,
     utils::{self, surface},
     vk, DeviceLoader, EntryLoader, InstanceLoader,
-    vk::{Device},
+    vk::{Device, MemoryMapFlags},
 };
+
+
+use cgmath::{Deg, Matrix4, Point3, Vector3};
+
 
 use std::{
     ffi::{c_void, CStr, CString},
@@ -67,9 +71,10 @@ unsafe extern "system" fn debug_callback(
 
 
     let mut file = OpenOptions::new()
+        .create(true)
         .write(true)
         .append(true)
-        .open("./logs/temp.txt")
+        .open("./logs/log_main.txt")
         .unwrap();
 
 
@@ -106,7 +111,7 @@ impl VertexV3 {
         }]
     }
 
-    pub fn get_attribute_descriptions() -> [vk::VertexInputAttributeDescription; 2] {
+    pub fn get_attribute_descriptions() -> [vk::VertexInputAttributeDescription; 1] {
         [
             vk::VertexInputAttributeDescription {
                 binding: 0,
@@ -114,22 +119,44 @@ impl VertexV3 {
                 format: vk::Format::R32G32B32A32_SFLOAT,
                 offset: offset_of!(Self, pos) as u32,
             },
-            vk::VertexInputAttributeDescription {
-                binding: 0,
-                location: 1,
-                format: vk::Format::R32G32B32A32_SFLOAT,
-                offset: offset_of!(Self, color) as u32,
-            },
+            // vk::VertexInputAttributeDescription {
+            //     binding: 0,
+            //     location: 1,
+            //     format: vk::Format::R32G32B32A32_SFLOAT,
+            //     offset: offset_of!(Self, color) as u32,
+            // },
         ]
     }
 }
 
 
 
+
+
+#[repr(C)]
+#[derive(Clone, Debug, Copy)]
+struct UniformBufferObject {
+    model: Matrix4<f32>,
+    view: Matrix4<f32>,
+    proj: Matrix4<f32>,
+}
+
+
+
+
+
+
+
+
+
+
 fn main() {
     println!("Ray-trace Peregrine");
 
-    let mut vulkan_output = String::from("");
+
+    // flush logs
+    fs::remove_file("./logs/log_main.txt").unwrap();
+
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -165,6 +192,8 @@ fn main() {
         vk::KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         vk::KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
         vk::KHR_SPIRV_1_4_EXTENSION_NAME,
+        vk::KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+        vk::EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
     ];
 
     let mut device_layers = Vec::new();
@@ -397,8 +426,8 @@ fn main() {
     let vertex_buffer_memory_allocate_info =
         vk::MemoryAllocateInfoBuilder::new()
                     .allocation_size(vertex_buffer_memory_reqs.size)
-                    .memory_type_index(2)
-                    .build();
+                    .memory_type_index(2);
+                    // .build();
     println!("\n vertex_buffer_memory_allocate_info, {:?} \n", vertex_buffer_memory_allocate_info);
 
     let vertex_buffer_memory = unsafe {
@@ -413,19 +442,35 @@ fn main() {
 
 
     unsafe {
-        let mut pointer: *mut std::ffi::c_void = std::ptr::null_mut();
-        let mut ref1 = &mut pointer;
+        // let mut pointer: *mut std::ffi::c_void = std::ptr::null_mut();
+        // let mut ref1 = &mut pointer;
         device
             .map_memory(
                 vertex_buffer_memory,
                 256,
                 vk::WHOLE_SIZE,
-                None,
-                ref1,
+                MemoryMapFlags::empty(),
+                // ref1,
             )
             .expect("failed to map 333memory.");
 
     }
+
+
+    // let uniform_transform = UniformBufferObject {
+    //     model: Matrix4::from_angle_z(Deg(90.0)),
+    //     view: Matrix4::look_at(
+    //         Point3::new(2.0, 2.0, 2.0),
+    //         Point3::new(0.0, 0.0, 0.0),
+    //         Vector3::new(0.0, 0.0, 1.0),
+    //     ),
+    //     proj: {
+    //         let mut proj = cgmath::perspective(
+    //             Deg()
+    //         )
+    //     }
+
+    // }
 
 
 
@@ -451,7 +496,32 @@ fn main() {
             .name(&entry_point),
     ];
 
-    let vertex_input = vk::PipelineVertexInputStateCreateInfoBuilder::new();
+
+    // let binding_description = VertexV3::get_binding_descriptions();
+    // let attribute_description = VertexV3::get_attribute_descriptions();
+
+
+    let binding_description = vk::VertexInputBindingDescriptionBuilder::new()
+        .binding(0)
+        .stride(std::mem::size_of::<VertexV3>() as u32,)
+        .input_rate(vk::VertexInputRate::VERTEX);
+
+    let binding_descriptions = &[binding_description][..];
+
+    let attribute_description = vk::VertexInputAttributeDescriptionBuilder::new()
+        .location(0)
+        .binding(0)
+        .format(vk::Format::R32G32B32A32_SFLOAT)
+        .offset(offset_of!(VertexV3, pos) as u32);
+
+    let attribute_descriptions = &[attribute_description][..];
+
+
+    let vertex_input = vk::PipelineVertexInputStateCreateInfoBuilder::new()
+        .vertex_binding_descriptions(binding_descriptions)
+        .vertex_attribute_descriptions(attribute_descriptions);
+
+
 
     let input_assembly = vk::PipelineInputAssemblyStateCreateInfoBuilder::new()
         .topology(vk::PrimitiveTopology::TRIANGLE_LIST)
@@ -604,10 +674,10 @@ fn main() {
             device.cmd_bind_pipeline(cmd_buf, vk::PipelineBindPoint::GRAPHICS, pipeline);
 
 
-            device.cmd_bind_vertex_buffers(cmd_buf, 200, &[vertex_buffer], &[0]);
+            device.cmd_bind_vertex_buffers(cmd_buf, 0, &[vertex_buffer], &[256]);
 
 
-            device.cmd_draw(cmd_buf, 3, 1, 0, 0);
+            device.cmd_draw(cmd_buf, indices.len() as u32, 1, 0, 0);
             device.cmd_end_render_pass(cmd_buf);
 
             device.end_command_buffer(cmd_buf).unwrap();
@@ -903,13 +973,13 @@ fn create_swapchain_etc(
                     a: vk::ComponentSwizzle::IDENTITY,
                 })
                 .subresource_range(
-                    vk::ImageSubresourceRangeBuilder::new()
+                    *vk::ImageSubresourceRangeBuilder::new()
                         .aspect_mask(vk::ImageAspectFlags::COLOR)
                         .base_mip_level(0)
                         .level_count(1)
                         .base_array_layer(0)
                         .layer_count(1)
-                        .build(),
+                        // .build(),
                 );
             unsafe { device.create_image_view(&image_view_info, None) }.unwrap()
         })
