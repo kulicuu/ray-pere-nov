@@ -130,9 +130,6 @@ impl VertexV3 {
 }
 
 
-
-
-
 #[repr(C)]
 #[derive(Clone, Debug, Copy)]
 struct UniformBufferObject {
@@ -140,13 +137,6 @@ struct UniformBufferObject {
     view: Matrix4<f32>,
     proj: Matrix4<f32>,
 }
-
-
-
-
-
-
-
 
 
 
@@ -362,11 +352,6 @@ fn main() {
 
     let entry_point = CString::new("main").unwrap();
 
-
-
-
-
-
     println!("\n \n");
 
     let model_path: &'static str = "assets/terrain__002__.obj";
@@ -442,17 +427,14 @@ fn main() {
 
 
     unsafe {
-        // let mut pointer: *mut std::ffi::c_void = std::ptr::null_mut();
-        // let mut ref1 = &mut pointer;
         device
             .map_memory(
                 vertex_buffer_memory,
                 256,
                 vk::WHOLE_SIZE,
                 MemoryMapFlags::empty(),
-                // ref1,
             )
-            .expect("failed to map 333memory.");
+            .expect("Failed to map memory.");
 
     }
 
