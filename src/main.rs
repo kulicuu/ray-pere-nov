@@ -62,7 +62,16 @@ struct Opt {
 
 struct Peregrine<'a> {
     _entry: &'a erupt::EntryLoader,
+    // in the actual struct used we'll move it instead of referencing it.
+    // like in the ash tutorials.
+    instance: vk::Instance,
+
+    // surface_loader: self
+
 }
+
+
+
 
 
 unsafe extern "system" fn debug_callback(
@@ -160,7 +169,7 @@ fn main() {
 
 
 
-    let frame_datas : std::vec::Vec<FrameData> = vec!();
+    let frames : std::vec::Vec<FrameData> = vec!();
 
 
 
@@ -178,7 +187,7 @@ fn main() {
 
 
 
-    let peregrine = Peregrine{ _entry: & entry };
+    // let peregrine = Peregrine{ _entry: & entry };
 
 
     // https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Instance
@@ -392,7 +401,7 @@ fn main() {
 
 
 
-    let (swapchain, swapchain_images, swapchain_image_views) = create_swapchain_etc(
+    let (swapchain, swapchain_images, swapchain_image_views, swapchain_info) = create_swapchain_etc(
         &surface,
         format,
         image_count,
@@ -406,6 +415,16 @@ fn main() {
     // Now have created swapchain, swapchain-images, swapchain-image-views
 
 
+
+
+
+
+
+
+
+
+
+
     let entry_point = CString::new("main").unwrap();
 
     println!("\n \n");
@@ -417,6 +436,10 @@ fn main() {
     let material = materials.clone().into_iter().nth(0).unwrap();
     let mut vertices = vec![];
     let mut indices = vec![];
+
+
+
+
     let mesh = model.mesh;
     let total_vertices_count = mesh.positions.len() / 3;
     for i in 0..total_vertices_count {
@@ -433,7 +456,18 @@ fn main() {
     };
     indices = mesh.indices.clone(); 
 
+
+
+    println!("\nVertices count {:?}\n", total_vertices_count);
+    println!("\nIndices count: {:?}\n", indices.len());
+    println!("\nDivides into:{:?}\n", indices.len() / total_vertices_count  );
+    println!("\nIndices count / x: {:?}\n", indices.len() / 4 );
+
+
     println!("Starting buffer and memory allocation/mapping processes... \n");
+
+
+
 
 
     let vertex_buffer_size = ::std::mem::size_of_val(&vertices) as vk::DeviceSize;
@@ -505,6 +539,86 @@ fn main() {
 
 
 
+    let uniform_transform = UniformBufferObject {
+        model: Matrix4::from_angle_z(Deg(90.0)),
+        view: Matrix4::look_at_rh(
+            Point3::new(2.0, 2.0, 2.0),
+            Point3::new(0.0, 0.0, 0.0),
+            Vector3::new(0.0, 0.0, 1.0),
+        ),
+        proj: {
+            let mut proj = cgmath::perspective(
+                Deg(45.0),
+                swapchain_info.image_extent.width as f32
+                    / swapchain_info.image_extent.height as f32,
+                0.1,
+                10.0,
+            );
+            proj[1][1] = proj[1][1] * -1.0;
+            proj
+        },
+    };
+
+
+    // https://vkguide.dev/docs/chapter-4/descriptors/
+    // Todo:  Make 4 descriptor sets as per the suggested in the link.
+
+
+
+    let pool_sizes = [
+        vk::DescriptorPoolSizeBuilder::new()
+        .descriptor_count(1),
+        vk::DescriptorPoolSizeBuilder::new()
+        .descriptor_count(1),
+    ];
+
+    let descriptor_pool_create_info = vk::DescriptorPoolCreateInfoBuilder::new()
+        .flags(vk::DescriptorPoolCreateFlags::empty())
+        .max_sets(2)
+        .pool_sizes(&pool_sizes);
+
+    let descriptor_pool = device.create_descriptor_pool(&descriptor_pool_create_info, None).unwrap();
+
+
+    let descriptor_set_layout_flags = vk::DescriptorSetLayoutCreateFlags::all();
+         // Probably want to modify this.
+
+
+    let descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
+        .binding(0) // the number of this descriptor_set
+        .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+        .descriptor_count(4)
+        .stage_flags(vk::ShaderStageFlags::VERTEX)
+        .immutable_samplers(&[]);
+
+
+    let descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new()
+        .flags(descriptor_set_layout_flags)
+        .bindings(& [descriptor_set_layout_binding]);
+
+
+    let descriptor_set_layout_binding_flags_create_info = 
+        vk::DescriptorSetLayoutBindingFlagsCreateInfoBuilder::new()
+            .binding_flags();  // DescriptorBindingFlags:  UPDATE_AFTER_BIND, PARTIALLY_BOUND (...)
+                    // https://docs.rs/erupt/0.20.0+190/erupt/vk1_2/struct.DescriptorBindingFlags.html
+
+    let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfoBuilder::new()
+        .descriptor_pool(descriptor_pool)
+        .set_layouts();
+
+
+
+
+    println!("\nuniform_transform: {:?}\n", uniform_transform);
+
+
+
+
+
+
+
+
+
 
     let vert_decoded = utils::decode_spv(SHADER_VERT).unwrap();
     let module_info = vk::ShaderModuleCreateInfoBuilder::new().code(&vert_decoded);
@@ -525,6 +639,17 @@ fn main() {
             .module(shader_frag)
             .name(&entry_point),
     ];
+
+
+
+
+
+
+
+
+
+
+
 
 
     // let binding_description = VertexV3::get_binding_descriptions();
@@ -1086,7 +1211,7 @@ fn main() {
 // this is a hacked together, partially complete attempt
 // to separate out swapchain etc creation in preparation for the
 // recreate_swapchain fn to be called when e.g. window is resized.
-fn create_swapchain_etc(
+fn create_swapchain_etc<'a>(
     surface: & erupt::extensions::khr_surface::SurfaceKHR,
     format: vk::SurfaceFormatKHR,
     image_count: u32,
@@ -1096,7 +1221,8 @@ fn create_swapchain_etc(
     ) -> (
         erupt::extensions::khr_swapchain::SwapchainKHR,
         erupt::SmallVec<erupt::vk::Image>,
-        Vec<erupt::vk::ImageView>
+        Vec<erupt::vk::ImageView>,
+        vk::SwapchainCreateInfoKHRBuilder<'a>,
     ) {
     let swapchain_info = vk::SwapchainCreateInfoKHRBuilder::new()
         .surface(*surface)
@@ -1150,62 +1276,11 @@ fn create_swapchain_etc(
     println!("\nswapchain info: {:?}\n", swapchain_info);
 
 
-    let uniform_transform = UniformBufferObject {
-        model: Matrix4::from_angle_z(Deg(90.0)),
-        view: Matrix4::look_at_rh(
-            Point3::new(2.0, 2.0, 2.0),
-            Point3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 1.0),
-        ),
-        proj: {
-            let mut proj = cgmath::perspective(
-                Deg(45.0),
-                swapchain_info.image_extent.width as f32
-                    / swapchain_info.image_extent.height as f32,
-                0.1,
-                10.0,
-            );
-            proj[1][1] = proj[1][1] * -1.0;
-            proj
-        },
-    };
-
-
-    // let pool_sizes = [
-    //     vk::DescriptorPoolSizeBuilder::new()
-    //     .descriptor_count(1),
-    //     vk::DescriptorPoolSizeBuilder::new()
-    //     .descriptor_count(1),
-    // ];
-
-    // let descriptor_pool_create_info = vk::DescriptorPoolCreateInfoBuilder::new()
-    //     .flags(vk::DescriptorPoolCreateFlags::empty())
-    //     .max_sets(2)
-    //     .pool_sizes(&pool_sizes);
 
 
 
 
-
-    // let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo {
-    //     s_type: vk::StructureType::DescriptorSetAllocateInfo,
-    //     p_next: ptr::null(),
-    //     descriptor_pool,
-    // }
-
-
-    println!("\nuniform_transform: {:?}\n", uniform_transform);
-
-
-
-
-
-
-
-
-
-
-    (swapchain, swapchain_images, swapchain_image_views)
+    (swapchain, swapchain_images, swapchain_image_views, swapchain_info)
 }
 
 
