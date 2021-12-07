@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-winit     = "0.25.0"
+winit     = "0.26.0"
 
 erupt = { path = "../erupt/erupt" }
 

@@ -565,19 +565,32 @@ fn main() {
 
 
 
+
+
+
+
+
     let pool_sizes = [
         vk::DescriptorPoolSizeBuilder::new()
-        .descriptor_count(1),
+        ._type(vk::DescriptorType::UNIFORM_BUFFER)
+        .descriptor_count(1), // this count is the number of descriptors of this type to allocate
         vk::DescriptorPoolSizeBuilder::new()
+        ._type(vk::DescriptorType::STORAGE_BUFFER)
         .descriptor_count(1),
     ];
 
+
+    let x32 = vk::DescriptorPoolCreateFlags::all();
+
+    println!("\nDescriptor Pool Flags created object: {:?}\n", x32);
+
     let descriptor_pool_create_info = vk::DescriptorPoolCreateInfoBuilder::new()
-        .flags(vk::DescriptorPoolCreateFlags::empty())
-        .max_sets(2)
+        .flags(vk::DescriptorPoolCreateFlags::all()) // not clear how to pick indivulual flags with this builder function
+        // is it a string that it makes (delimited by the bar |)?
+        .max_sets(100) 
         .pool_sizes(&pool_sizes);
 
-    let descriptor_pool = device.create_descriptor_pool(&descriptor_pool_create_info, None).unwrap();
+    let descriptor_pool = unsafe { device.create_descriptor_pool(&descriptor_pool_create_info, None).unwrap() };
 
 
     let descriptor_set_layout_flags = vk::DescriptorSetLayoutCreateFlags::all();
@@ -592,21 +605,36 @@ fn main() {
         .immutable_samplers(&[]);
 
 
+
+
+
+    // let descriptor_set_layout_binding_flags_create_info = 
+    //     vk::DescriptorSetLayoutBindingFlagsCreateInfoBuilder::new()
+    //         .binding_flags();  // DescriptorBindingFlags:  UPDATE_AFTER_BIND, PARTIALLY_BOUND (...)
+    //                 // https://docs.rs/erupt/0.20.0+190/erupt/vk1_2/struct.DescriptorBindingFlags.html
+
+
+    // let descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new()
+    //     .flags(descriptor_set_layout_flags)
+    //     .bindings(& [descriptor_set_layout_binding]);
+
+
+    // let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfoBuilder::new()
+    //     .descriptor_pool(descriptor_pool)
+    //     .set_layouts();
+
+
     let descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new()
         .flags(descriptor_set_layout_flags)
-        .bindings(& [descriptor_set_layout_binding]);
+        .bindings(&[descriptor_set_layout_binding])
+        .build_dangling();
 
 
-    let descriptor_set_layout_binding_flags_create_info = 
-        vk::DescriptorSetLayoutBindingFlagsCreateInfoBuilder::new()
-            .binding_flags();  // DescriptorBindingFlags:  UPDATE_AFTER_BIND, PARTIALLY_BOUND (...)
-                    // https://docs.rs/erupt/0.20.0+190/erupt/vk1_2/struct.DescriptorBindingFlags.html
+    let descriptor_set_layout = unsafe { device.create_descriptor_set_layout(&descriptor_set_layout_create_info, None).unwrap() };
 
     let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfoBuilder::new()
         .descriptor_pool(descriptor_pool)
-        .set_layouts();
-
-
+        .set_layouts(& [descriptor_set_layout]);
 
 
     println!("\nuniform_transform: {:?}\n", uniform_transform);
@@ -615,6 +643,11 @@ fn main() {
 
 
 
+
+    let descriptor_set_layout_support = vk::DescriptorSetLayoutSupportBuilder::new()
+        .supported(true);
+
+    println!("\ndescriptor_set_layout_support: {:?}\n", descriptor_set_layout_support);
 
 
 
