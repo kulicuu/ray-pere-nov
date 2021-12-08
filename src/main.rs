@@ -597,11 +597,35 @@ fn main() {
          // Probably want to modify this.
 
 
-    let descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
-        .binding(0) // the number of this descriptor_set
+    let sampler_creat_info = vk::SamplerCreateInfoBuilder::new()
+        .flags()
+        .mag_filter()
+        .min_filter()
+        .mipmap_mode()
+        .address_mode_u()
+        .address_mode_v()
+        .address_mode_w()
+        .mip_lod_bias()
+        .anisotropy_enable()
+        .max_anisotropy()
+        .compare_enable()
+        .compare_op()
+        .min_lod()
+        .max_lod()
+        .border_color()
+        .unnormalized_coordinates()
+        
+
+
+    let model_view_proj_descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
+        .binding(1) // the number of this binding
         .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
-        .descriptor_count(4)
-        .stage_flags(vk::ShaderStageFlags::VERTEX)
+        .descriptor_count(1) // There is only one descriptor in this set.
+        //count?  so maybe the entire descriptor set has binding 1, and then you
+        // can have different positions within that, to minutely address objects within the set.
+        .stage_flags(vk::ShaderStageFlags::VERTEX) // I think this means it gets injected into the 
+        // vertex stage as we see below in the shader stage flags bits.
+        // Alternative may be to use the [...]Bits version, not sure the difference
         .immutable_samplers(&[]);
 
 
@@ -626,11 +650,13 @@ fn main() {
 
     let descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new()
         .flags(descriptor_set_layout_flags)
-        .bindings(&[descriptor_set_layout_binding])
+        .bindings(&[model_view_proj_descriptor_set_layout_binding])
         .build_dangling();
 
 
-    let descriptor_set_layout = unsafe { device.create_descriptor_set_layout(&descriptor_set_layout_create_info, None).unwrap() };
+    let descriptor_set_layout = unsafe { 
+        device.create_descriptor_set_layout(&descriptor_set_layout_create_info, None).unwrap() 
+    };
 
     let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfoBuilder::new()
         .descriptor_pool(descriptor_pool)
@@ -669,6 +695,8 @@ fn main() {
             .name(&entry_point),
         vk::PipelineShaderStageCreateInfoBuilder::new()
             .stage(vk::ShaderStageFlagBits::FRAGMENT)
+            // We see here the usage pattern for the [...]Bits constructor.  It takes the 
+            // string constant value and translates it.
             .module(shader_frag)
             .name(&entry_point),
     ];
@@ -689,20 +717,45 @@ fn main() {
     // let attribute_description = VertexV3::get_attribute_descriptions();
 
 
-    let binding_description = vk::VertexInputBindingDescriptionBuilder::new()
+    let vertex_input_binding_description = vk::VertexInputBindingDescriptionBuilder::new()
         .binding(0)
         .stride(std::mem::size_of::<VertexV3>() as u32,)
         .input_rate(vk::VertexInputRate::VERTEX);
 
-    let binding_descriptions = &[binding_description][..];
 
-    let attribute_description = vk::VertexInputAttributeDescriptionBuilder::new()
+
+
+
+
+    // So it looks like we've got binding 0 set on vertex_input, which I think bypasses
+    // descriptor sets.
+
+
+
+    let binding_descriptions = &[vertex_input_binding_description][..];
+
+
+
+
+    let vertex_input_attribute_description = vk::VertexInputAttributeDescriptionBuilder::new()
         .location(0)
         .binding(0)
         .format(vk::Format::R32G32B32A32_SFLOAT)
         .offset(offset_of!(VertexV3, pos) as u32);
 
-    let attribute_descriptions = &[attribute_description][..];
+
+
+
+
+
+
+
+
+    let attribute_descriptions = &[vertex_input_attribute_description][..];
+
+
+
+
 
 
     let vertex_input = vk::PipelineVertexInputStateCreateInfoBuilder::new()
@@ -743,6 +796,12 @@ fn main() {
         .sample_shading_enable(false)
         .rasterization_samples(vk::SampleCountFlagBits::_1);
 
+
+
+
+
+
+
     let color_blend_attachments = vec![vk::PipelineColorBlendAttachmentStateBuilder::new()
         .color_write_mask(
             vk::ColorComponentFlags::R
@@ -755,7 +814,74 @@ fn main() {
         .logic_op_enable(false)
         .attachments(&color_blend_attachments);
 
-    let pipeline_layout_info = vk::PipelineLayoutCreateInfoBuilder::new();
+
+
+/*The VkDescriptorSetLayoutBinding structure is defined as:
+
+binding is the binding number of this entry and corresponds to a 
+resource of the same binding number in the shader stages.
+
+If there is just a binding number to this entry, a single resource per 
+descriptor_set_layout_binding.  Given the name, that makes sense.
+
+descriptorType is a VkDescriptorType specifying which type 
+of resource descriptors are used for this binding.
+
+Given the name.  Binding is to one specific resource.  Like a model-view-projection matrix.
+Or something like a vertex buffer.
+
+descriptorCount is the number of descriptors contained in the binding, 
+accessed in a shader as an array, except if descriptorType is 
+VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT in which case descriptorCount 
+is the size in bytes of the inline uniform block. If descriptorCount is zero 
+this binding entry is reserved and the resource must not be accessed from any 
+stage via this binding within any pipeline using the set layout.
+
+stageFlags member is a bitmask of VkShaderStageFlagBits specifying which 
+pipeline shader stages can access a resource for this binding. 
+VK_SHADER_STAGE_ALL is a shorthand specifying that all defined shader stages, 
+ncluding any additional stages defined by extensions, can access the resource.
+
+If a shader stage is not included in stageFlags,
+ then a resource must not be accessed from that stage via this binding 
+ within any pipeline using the set layout. Other than input attachments 
+ which are limited to the fragment shader, there are no limitations on what 
+ combinations of stages can use a descriptor binding, and in particular a 
+ binding can be used by both graphics stages and the compute stage.
+*/
+
+
+
+    // This one is is for the uniform buffer object.
+    // And, furthermore, the vertex buffer may go around another way besides descriptors,
+    // I think may be known as push_constant.  This is seen in the vulkan-tutorial how
+    // they introduce vertex_buffers
+    let descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
+        .binding(0)  // Assign binding 0 to model-view-projection matrix. 
+        .descriptor_type()
+        .descriptor_count()
+        .stage_flags()
+        .immutable_samplers();
+
+
+    let descriptor_set_layout = vk::DescriptorSetLayoutCreateInfoBuilder::new()
+        .flags(vk::DescriptorSetLayoutCreateFlags::all())
+        .bindings(& [descriptor_set_layout_binding]);
+
+
+    let pipeline_layout_info = vk::PipelineLayoutCreateInfoBuilder::new()
+        .flags(
+                vk::PiplelineLayoutCreateFlags::all()
+            )
+        .set_layouts(
+
+            )
+        .push_constant_ranges();
+
+
+
+
+
     let pipeline_layout =
         unsafe { device.create_pipeline_layout(&pipeline_layout_info, None) }.unwrap();
 
