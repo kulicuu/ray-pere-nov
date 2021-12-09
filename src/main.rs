@@ -922,7 +922,7 @@ If a shader stage is not included in stageFlags,
     //     // Instead of None add the Option<DescriptorSetLayoutSupport> 
     // };
 
-
+    // let l55 : & []
 
 
     // Todo: Add an allocator to replace None
@@ -933,6 +933,7 @@ If a shader stage is not included in stageFlags,
         )
     }.unwrap();
 
+    let l55 : & [vk::DescriptorSetLayout] = & [mvp_descriptor_set_layout];
 
 
     let push_constant_range = vk::PushConstantRangeBuilder::new()
@@ -940,12 +941,13 @@ If a shader stage is not included in stageFlags,
         .offset(0)  // I think it's zero because this feature is used when multiple resources share a descriptor/piece of memory.
         .size(vertex_buffer_memory_reqs.size as u32); // what is using this?  is this the vertex buffer?  We might have that size above.
 
-
+    let l83 : & [ vk::PushConstantRangeBuilder ] = & [ push_constant_range ];
+    // It's weird but the spec calls for the builder of PushConstantRangeBuilder, rather than a PushConstantRange type.
 
     let pipeline_layout_info = vk::PipelineLayoutCreateInfoBuilder::new()
         .flags(vk::PipelineLayoutCreateFlags::all())
-        .set_layouts(& [mvp_descriptor_set_layout])  // & [DescriptorSetLayout]
-        .push_constant_ranges(&[push_constant_range]);
+        .set_layouts(l55)  // & [DescriptorSetLayout]
+        .push_constant_ranges(l83);
 
 
 
