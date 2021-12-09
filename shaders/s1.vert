@@ -19,13 +19,53 @@ layout(set = 1, binding = 0) uniform cameraBuffer {
         mat4 proj;
     } cameraData;
 
+
+
+
+
+
+
+
+
+
+
+
 vec3 colors[3] = vec3[](
     vec3(1.0, 0.0, 0.0),
     vec3(0.0, 1.0, 0.0),
     vec3(0.0, 0.0, 1.0));
 
+
+
+
+
+
+
+
+
 void main() {
-    gl_Position = vec4(inPosition);
+    
+
+
+    vec4 modelPos = cameraData.model * vec4(inPosition);
+
+    vec4 viewPos = cameraData.view * modelPos;
+
+
+
+
+    gl_Position = cameraData.proj * viewPos;
+
+
+
+
+
+
+
     // fragColor = colors[gl_VertexIndex % 3];
     fragColor = vec3(0.0, 1.0, 0.0);
+
+
+
+
 }
