@@ -900,12 +900,17 @@ If a shader stage is not included in stageFlags,
 
 
 
+    let push_constant_range = vk::PushConstantRangeBuilder::new()
+        .stage_flags(vk::ShaderStageFlags::VERTEX)
+        .offset(0)  // I think it's zero because this feature is used when multiple resources share a descriptor/piece of memory.
+        .size(1024); // what is using this?  is this the vertex buffer?  We might have that size above.
+
 
 
     let pipeline_layout_info = vk::PipelineLayoutCreateInfoBuilder::new()
         .flags(vk::PipelineLayoutCreateFlags::all())
         .set_layouts(& [mvp_descriptor_set_layout])  // & [DescriptorSetLayout]
-        .push_constant_ranges();
+        .push_constant_ranges(&[push_constant_range]);
 
 
 
