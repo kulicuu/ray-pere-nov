@@ -618,7 +618,36 @@ fn main() {
         
 
 
-    let sampler_x32 = device.create_sampler(&sampler_x32_create_info, None).unwrap();
+    let sampler_x32 = unsafe { device.create_sampler(&sampler_x32_create_info, None) }.unwrap();
+
+
+    let sampler_x33_create_info = vk::SamplerCreateInfoBuilder::new()
+        .flags(vk::SamplerCreateFlags::all())
+        .mag_filter(vk::Filter(1))
+        .min_filter(vk::Filter(1))
+        .mipmap_mode(vk::SamplerMipmapMode::NEAREST)
+        .address_mode_u(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+        .address_mode_v(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+        .address_mode_w(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+        .mip_lod_bias(0.0 as f32)
+        .anisotropy_enable(true)
+        .max_anisotropy(1.0 as f32)
+        .compare_enable(false)
+        .compare_op(vk::CompareOp::NEVER)
+        .min_lod(1.0 as f32)
+        .max_lod(2.0 as f32)
+        .border_color(vk::BorderColor::FLOAT_TRANSPARENT_BLACK)
+        .unnormalized_coordinates(false);
+
+        
+
+
+    let sampler_x33  = unsafe { device.create_sampler(&sampler_x32_create_info, None) }.unwrap();
+
+
+
+    let l33 : & [vk::Sampler] = &[sampler_x33];
+
 
 
     let model_view_proj_descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
@@ -630,7 +659,7 @@ fn main() {
         .stage_flags(vk::ShaderStageFlags::VERTEX) // I think this means it gets injected into the 
         // vertex stage as we see below in the shader stage flags bits.
         // Alternative may be to use the [...]Bits version, not sure the difference
-        .immutable_samplers(&[sampler_x32]);
+        .immutable_samplers(l33);
 
 
 
@@ -689,7 +718,7 @@ fn main() {
 
     let frag_decoded = utils::decode_spv(SHADER_FRAG).unwrap();
     let module_info = vk::ShaderModuleCreateInfoBuilder::new().code(&frag_decoded);
-    let shader_frag = unsafe { device.create_shader_module(&module_info, None) }.unwrap();
+    let shader_frag = unsafe { device.create_shader_module(&module_info, None)  }.unwrap();
 
 
     let shader_stages = vec![
@@ -863,12 +892,18 @@ If a shader stage is not included in stageFlags,
 
 
 
+    let l32 : & [vk::Sampler] = &[sampler_x32];
+
+
     let descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
         .binding(0)  // Assign binding 0 to model-view-projection matrix. 
         .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
         .descriptor_count(1)
         .stage_flags(vk::ShaderStageFlags::all())
-        .immutable_samplers(& [sampler_x32]);
+        .immutable_samplers(l32);
+
+
+    let l34 : & [vk::DescriptorSetLayoutBindingBuilder] = &[descriptor_set_layout_binding];
 
 
 
@@ -876,7 +911,7 @@ If a shader stage is not included in stageFlags,
 
     let mvp_descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new()
         .flags(vk::DescriptorSetLayoutCreateFlags::all())
-        .bindings(& [descriptor_set_layout_binding]);
+        .bindings(l34);
 
 
     // Todo: get DescriptorSetLayoutSupportmvp
@@ -903,7 +938,7 @@ If a shader stage is not included in stageFlags,
     let push_constant_range = vk::PushConstantRangeBuilder::new()
         .stage_flags(vk::ShaderStageFlags::VERTEX)
         .offset(0)  // I think it's zero because this feature is used when multiple resources share a descriptor/piece of memory.
-        .size(1024); // what is using this?  is this the vertex buffer?  We might have that size above.
+        .size(vertex_buffer_memory_reqs.size as u32); // what is using this?  is this the vertex buffer?  We might have that size above.
 
 
 
