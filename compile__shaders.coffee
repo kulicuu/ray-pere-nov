@@ -4,7 +4,13 @@ c = console.log.bind console
 { spawn, exec } = require 'child_process'
 
 
-vert = exec ('glslc.exe ./shaders/s1.vert -o ./spv/s1.vert.spv')
+vert = exec ('glslc.exe ./shaders/s1.vert -o ./spv/s1.vert.spv'), (err) ->
+        c 'hello?', err
+
+
+
+
+
 frag = exec ('glslc.exe ./shaders/s1.frag -o ./spv/s1.frag.spv')
 
 

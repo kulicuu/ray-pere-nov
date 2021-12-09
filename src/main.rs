@@ -646,7 +646,10 @@ fn main() {
 
 
 
-    let l33 : & [vk::Sampler] = &[sampler_x33];
+    let l33 : & [vk::Sampler] = &[sampler_x33]; // slice with sampler_x33, we can make another sampler and add it to this.
+
+    
+
 
 
 
@@ -721,17 +724,32 @@ fn main() {
     let shader_frag = unsafe { device.create_shader_module(&module_info, None)  }.unwrap();
 
 
+
+
+
+
     let shader_stages = vec![
+
+
+
+
         vk::PipelineShaderStageCreateInfoBuilder::new()
             .stage(vk::ShaderStageFlagBits::VERTEX)
             .module(shader_vert)
             .name(&entry_point),
+
+
+
+
         vk::PipelineShaderStageCreateInfoBuilder::new()
             .stage(vk::ShaderStageFlagBits::FRAGMENT)
             // We see here the usage pattern for the [...]Bits constructor.  It takes the 
             // string constant value and translates it.
             .module(shader_frag)
             .name(&entry_point),
+
+
+
     ];
 
 
