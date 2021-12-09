@@ -572,11 +572,12 @@ fn main() {
 
     let pool_sizes = [
         vk::DescriptorPoolSizeBuilder::new()
-        ._type(vk::DescriptorType::UNIFORM_BUFFER)
-        .descriptor_count(1), // this count is the number of descriptors of this type to allocate
-        vk::DescriptorPoolSizeBuilder::new()
         ._type(vk::DescriptorType::STORAGE_BUFFER)
         .descriptor_count(1),
+
+        vk::DescriptorPoolSizeBuilder::new()
+        ._type(vk::DescriptorType::UNIFORM_BUFFER)
+        .descriptor_count(1), // this count is the number of descriptors of this type to allocate
     ];
 
 
@@ -585,7 +586,7 @@ fn main() {
     println!("\nDescriptor Pool Flags created object: {:?}\n", x32);
 
     let descriptor_pool_create_info = vk::DescriptorPoolCreateInfoBuilder::new()
-        .flags(vk::DescriptorPoolCreateFlags::all()) // not clear how to pick indivulual flags with this builder function
+        .flags(vk::DescriptorPoolCreateFlags::empty()) // not clear how to pick indivulual flags with this builder function
         // is it a string that it makes (delimited by the bar |)?
         .max_sets(100) 
         .pool_sizes(&pool_sizes);
@@ -606,7 +607,7 @@ fn main() {
         .address_mode_v(vk::SamplerAddressMode::CLAMP_TO_BORDER)
         .address_mode_w(vk::SamplerAddressMode::CLAMP_TO_BORDER)
         .mip_lod_bias(0.0 as f32)
-        .anisotropy_enable(true)
+        .anisotropy_enable(false)
         .max_anisotropy(1.0 as f32)
         .compare_enable(false)
         .compare_op(vk::CompareOp::NEVER)
@@ -793,6 +794,7 @@ fn main() {
         .binding(0)
         .format(vk::Format::R32G32B32A32_SFLOAT)
         .offset(offset_of!(VertexV3, pos) as u32);
+        // .offset(0);
 
 
 

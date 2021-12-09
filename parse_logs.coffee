@@ -26,9 +26,8 @@ file_path = path.join __dirname, 'logs', 'log_main.txt'
 
 stream = fs.createWriteStream 'parsed_logs.txt', {flags: 'a'}
 
-watch './logs/log_main.txt', {}, (evt, name) ->
-    # c '&s changed', name
 
+thing_do = ->
     fs.readFile file_path, {encoding: 'utf-8'}, (err, data) ->
         # c data
 
@@ -37,7 +36,7 @@ watch './logs/log_main.txt', {}, (evt, name) ->
 
 
         arr = data.split '\n'
-
+        c arr
 
         for str in arr
             if str.includes "Validation Error"
@@ -50,8 +49,17 @@ watch './logs/log_main.txt', {}, (evt, name) ->
                 fs.appendFile './logs/parsed_logs.txt', "\n \n", (err) ->
                     if err then c err
 
+
+watch './logs/log_main.txt', {}, (evt, name) ->
+    # c '&s changed', name
+
+    thing_do()
+
+
         # if data.includes(" VK_NV_representative_fragment_test ")
         #     c data
 
 
 # stream.end()
+
+thing_do()
