@@ -597,24 +597,28 @@ fn main() {
          // Probably want to modify this.
 
 
-    let sampler_creat_info = vk::SamplerCreateInfoBuilder::new()
-        .flags()
-        .mag_filter()
-        .min_filter()
-        .mipmap_mode()
-        .address_mode_u()
-        .address_mode_v()
-        .address_mode_w()
-        .mip_lod_bias()
-        .anisotropy_enable()
-        .max_anisotropy()
-        .compare_enable()
-        .compare_op()
-        .min_lod()
-        .max_lod()
-        .border_color()
-        .unnormalized_coordinates()
+    let sampler_x32_create_info = vk::SamplerCreateInfoBuilder::new()
+        .flags(vk::SamplerCreateFlags::all())
+        .mag_filter(vk::Filter(1))
+        .min_filter(vk::Filter(1))
+        .mipmap_mode(vk::SamplerMipmapMode::NEAREST)
+        .address_mode_u(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+        .address_mode_v(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+        .address_mode_w(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+        .mip_lod_bias(0.0 as f32)
+        .anisotropy_enable(true)
+        .max_anisotropy(1.0 as f32)
+        .compare_enable(false)
+        .compare_op(vk::CompareOp::NEVER)
+        .min_lod(1.0 as f32)
+        .max_lod(2.0 as f32)
+        .border_color(vk::BorderColor::FLOAT_TRANSPARENT_BLACK)
+        .unnormalized_coordinates(false);
+
         
+
+
+    let sampler_x32 = device.create_sampler(&sampler_x32_create_info, None).unwrap();
 
 
     let model_view_proj_descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
