@@ -630,7 +630,7 @@ fn main() {
         .stage_flags(vk::ShaderStageFlags::VERTEX) // I think this means it gets injected into the 
         // vertex stage as we see below in the shader stage flags bits.
         // Alternative may be to use the [...]Bits version, not sure the difference
-        .immutable_samplers(&[]);
+        .immutable_samplers(&[sampler_x32]);
 
 
 
@@ -860,26 +860,51 @@ If a shader stage is not included in stageFlags,
     // And, furthermore, the vertex buffer may go around another way besides descriptors,
     // I think may be known as push_constant.  This is seen in the vulkan-tutorial how
     // they introduce vertex_buffers
+
+
+
     let descriptor_set_layout_binding = vk::DescriptorSetLayoutBindingBuilder::new()
         .binding(0)  // Assign binding 0 to model-view-projection matrix. 
-        .descriptor_type()
-        .descriptor_count()
-        .stage_flags()
-        .immutable_samplers();
+        .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+        .descriptor_count(1)
+        .stage_flags(vk::ShaderStageFlags::all())
+        .immutable_samplers(& [sampler_x32]);
 
 
-    let descriptor_set_layout = vk::DescriptorSetLayoutCreateInfoBuilder::new()
+
+
+
+    let mvp_descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new()
         .flags(vk::DescriptorSetLayoutCreateFlags::all())
         .bindings(& [descriptor_set_layout_binding]);
 
 
-    let pipeline_layout_info = vk::PipelineLayoutCreateInfoBuilder::new()
-        .flags(
-                vk::PiplelineLayoutCreateFlags::all()
-            )
-        .set_layouts(
+    // Todo: get DescriptorSetLayoutSupportmvp
 
-            )
+
+    // let mvp_descriptor_set_layout = unsafe { 
+    //     device.create_descriptor_set_layout_support_khr(&mvp_descriptor_set_layout_create_info, None);
+    //     // Instead of None add the Option<DescriptorSetLayoutSupport> 
+    // };
+
+
+
+
+    // Todo: Add an allocator to replace None
+    let mvp_descriptor_set_layout = unsafe {
+        device.create_descriptor_set_layout(
+            & mvp_descriptor_set_layout_create_info,
+            None
+        )
+    }.unwrap();
+
+
+
+
+
+    let pipeline_layout_info = vk::PipelineLayoutCreateInfoBuilder::new()
+        .flags(vk::PipelineLayoutCreateFlags::all())
+        .set_layouts(& [mvp_descriptor_set_layout])  // & [DescriptorSetLayout]
         .push_constant_ranges();
 
 
